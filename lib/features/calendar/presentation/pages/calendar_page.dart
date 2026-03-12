@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:calendar/core/constants/app_colors.dart';
+import 'package:calendar/core/theme/theme_cubit.dart';
 import 'package:calendar/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:calendar/features/calendar/presentation/bloc/calendar_event.dart';
 import 'package:calendar/features/calendar/presentation/bloc/calendar_state.dart';
@@ -130,6 +131,26 @@ class _Header extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          // Кнопка переключения темы
+          BlocBuilder<ThemeCubit, ThemeMode>(
+            builder: (context, themeMode) {
+              final isDark = themeMode == ThemeMode.dark ||
+                  (themeMode == ThemeMode.system &&
+                      MediaQuery.platformBrightnessOf(context) ==
+                          Brightness.dark);
+              return GestureDetector(
+                onTap: () => context.read<ThemeCubit>().toggle(),
+                child: Icon(
+                  isDark
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  size: 24,
+                  color: theme.colorScheme.onSurface,
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 12),
           // Иконка колокольчика с синей точкой
           Stack(
             clipBehavior: Clip.none,
