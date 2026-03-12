@@ -9,6 +9,7 @@ import 'package:calendar/features/calendar/presentation/bloc/calendar_event.dart
 import 'package:calendar/features/calendar/presentation/bloc/calendar_state.dart';
 import 'package:calendar/features/calendar/presentation/widgets/month_view.dart';
 import 'package:calendar/features/calendar/presentation/widgets/view_mode_selector.dart';
+import 'package:calendar/features/calendar/presentation/widgets/year_view.dart';
 import 'package:calendar/features/event/presentation/widgets/event_list.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -74,11 +75,15 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _buildCalendarView(CalendarState state) {
     return switch (state.viewMode) {
+      CalendarViewMode.year => const SizedBox(
+          height: 400,
+          child: YearView(),
+        ),
       CalendarViewMode.month => const SizedBox(
           height: 320,
           child: MonthView(),
         ),
-      // Заглушки для остальных видов — будут реализованы в шагах 14–16
+      // Week и Day — будут реализованы в шагах 15–16
       _ => const SizedBox(
           height: 100,
           child: Center(child: Text('Coming soon')),
