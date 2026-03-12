@@ -31,10 +31,10 @@ class _EventDetailPageState extends State<EventDetailPage> {
     return BlocListener<EventBloc, EventState>(
       listener: (context, state) {
         if (state is EventDeleted) {
-          // Обновляем кэш CalendarBloc после удаления
+          // Инвалидируем кэш CalendarBloc после удаления
           final now = DateTime.now();
           context.read<CalendarBloc>().add(
-                LoadEventsForRange(
+                InvalidateCacheForRange(
                   start: DateTime(now.year, now.month - 1, 1),
                   end: DateTime(now.year, now.month + 2, 0),
                 ),

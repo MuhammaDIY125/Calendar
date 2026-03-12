@@ -56,6 +56,7 @@ class _YearViewState extends State<YearView> {
           return PageView.builder(
             controller: _pageController,
             itemCount: AppConstants.totalYears,
+            allowImplicitScrolling: true,
             onPageChanged: (index) {
               final year = AppConstants.minYear + index;
               context.read<CalendarBloc>().add(

@@ -32,7 +32,8 @@ class CalendarGrid extends StatelessWidget {
     final totalCells = firstWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
 
-    return Column(
+    return RepaintBoundary(
+      child: Column(
       children: [
         // Заголовок дней недели
         Row(
@@ -88,6 +89,7 @@ class CalendarGrid extends StatelessWidget {
             }),
           ),
       ],
+    ),
     );
   }
 }

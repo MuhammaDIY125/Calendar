@@ -74,6 +74,7 @@ class _DayViewState extends State<DayView> {
             controller: _pageController,
             itemCount: CalendarDateUtils.totalDays,
             onPageChanged: _onPageChanged,
+            allowImplicitScrolling: true,
             itemBuilder: (_, index) {
               final date = CalendarDateUtils.dayIndexToDate(index);
               final events = state.eventsForDate(date);
@@ -143,7 +144,8 @@ class _DayPageState extends State<_DayPage> {
         const Divider(height: 1),
         // Таймлайн
         Expanded(
-          child: SingleChildScrollView(
+          child: RepaintBoundary(
+            child: SingleChildScrollView(
             controller: _scrollController,
             child: SizedBox(
               height: 24 * _hourHeight,
@@ -160,6 +162,7 @@ class _DayPageState extends State<_DayPage> {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ],

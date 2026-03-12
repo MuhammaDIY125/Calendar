@@ -37,3 +37,10 @@ class LoadEventsForRange extends CalendarEvent {
 class GoToToday extends CalendarEvent {
   const GoToToday();
 }
+
+/// Инвалидация кэша для диапазона дат (вызывается после CRUD)
+class InvalidateCacheForRange extends CalendarEvent {
+  final DateTime start;
+  final DateTime end;
+  const InvalidateCacheForRange({required this.start, required this.end});
+}

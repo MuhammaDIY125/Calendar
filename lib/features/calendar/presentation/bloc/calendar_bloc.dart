@@ -19,6 +19,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     on<NavigateToPrevious>(_onNavigateToPrevious);
     on<LoadEventsForRange>(_onLoadEventsForRange);
     on<GoToToday>(_onGoToToday);
+    on<InvalidateCacheForRange>(_onInvalidateCacheForRange);
   }
 
   void _onChangeViewMode(ChangeViewMode event, Emitter<CalendarState> emit) {
@@ -98,6 +99,27 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       CalendarViewMode.week => focused.add(Duration(days: direction * 7)),
       CalendarViewMode.day => focused.add(Duration(days: direction)),
     };
+  }
+
+  /// Инвалидация кэша для диапазона и повторная загрузка
+  Future<void> _onInvalidateCacheForRange(
+    InvalidateCacheForRange event,
+    Emitter<CalendarState> emit,
+  ) async {
+    // Удаляем устаревшие ключи из кэша
+    final updated = Map<DateTime, List<Event>>.from(state.cachedEvents);
+    var d = event.start;
+    while (!d.isAfter(event.end)) {
+      updated.remove(DateTime(d.year, d.month, d.day));
+      d = d.add(const Duration(days: 1));
+    }
+    emit(state.copyWith(cachedEvents: updated));
+
+    // Перезагружаем диапазон из БД
+    await _onLoadEventsForRange(
+      LoadEventsForRange(start: event.start, end: event.end),
+      emit,
+    );
   }
 
   /// Загрузка событий для видимого диапазона ± 1 месяц

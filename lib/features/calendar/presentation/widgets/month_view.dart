@@ -76,6 +76,8 @@ class _MonthViewState extends State<MonthView> {
             controller: _pageController,
             itemCount: AppConstants.totalMonths,
             onPageChanged: _onPageChanged,
+            // Предзагрузка соседних месяцев
+            allowImplicitScrolling: true,
             itemBuilder: (_, index) {
               final (year, month) = CalendarDateUtils.indexToMonth(index);
               return _MonthPage(

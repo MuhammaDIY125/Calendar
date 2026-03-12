@@ -73,6 +73,7 @@ class _WeekViewState extends State<WeekView> {
                   controller: _pageController,
                   itemCount: CalendarDateUtils.totalWeeks,
                   onPageChanged: _onPageChanged,
+                  allowImplicitScrolling: true,
                   itemBuilder: (_, index) {
                     final monday = CalendarDateUtils.weekIndexToMonday(index);
                     return _WeekStrip(

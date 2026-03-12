@@ -39,7 +39,7 @@ class _EventEditPageState extends State<EventEditPage> {
             // Инвалидируем кэш CalendarBloc
             final date = state.event.date;
             context.read<CalendarBloc>().add(
-                  LoadEventsForRange(
+                  InvalidateCacheForRange(
                     start: DateTime(date.year, date.month - 1, 1),
                     end: DateTime(date.year, date.month + 2, 0),
                   ),
