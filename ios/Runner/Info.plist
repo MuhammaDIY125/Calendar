@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Calendar uses notifications to remind you about upcoming events.</string>
 </dict>
 </plist>

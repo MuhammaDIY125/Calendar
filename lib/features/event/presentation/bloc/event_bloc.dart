@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:calendar/core/utils/notification_service.dart';
 import 'package:calendar/features/event/domain/usecases/create_event.dart';
 import 'package:calendar/features/event/domain/usecases/delete_event.dart';
 import 'package:calendar/features/event/domain/usecases/get_event_by_id.dart';
@@ -14,6 +15,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   final DeleteEvent _deleteEvent;
   final GetEventsForDate _getEventsForDate;
   final GetEventById _getEventById;
+  final NotificationService _notifications;
 
   EventBloc({
     required CreateEvent createEvent,
@@ -21,11 +23,13 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     required DeleteEvent deleteEvent,
     required GetEventsForDate getEventsForDate,
     required GetEventById getEventById,
+    NotificationService? notificationService,
   })  : _createEvent = createEvent,
         _updateEvent = updateEvent,
         _deleteEvent = deleteEvent,
         _getEventsForDate = getEventsForDate,
         _getEventById = getEventById,
+        _notifications = notificationService ?? NotificationService(),
         super(const EventInitial()) {
     on<CreateEventRequested>(_onCreate);
     on<UpdateEventRequested>(_onUpdate);
@@ -40,9 +44,13 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   ) async {
     emit(const EventLoading());
     final result = await _createEvent(CreateEventParams(event: event.event));
-    result.fold(
-      (failure) => emit(EventError(failure.message)),
-      (created) => emit(EventCreated(created)),
+    await result.fold(
+      (failure) async => emit(EventError(failure.message)),
+      (created) async {
+        // Планируем уведомление если задано напоминание
+        await _notifications.scheduleEventReminder(created);
+        emit(EventCreated(created));
+      },
     );
   }
 
@@ -52,9 +60,16 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   ) async {
     emit(const EventLoading());
     final result = await _updateEvent(UpdateEventParams(event: event.event));
-    result.fold(
-      (failure) => emit(EventError(failure.message)),
-      (updated) => emit(EventUpdated(updated)),
+    await result.fold(
+      (failure) async => emit(EventError(failure.message)),
+      (updated) async {
+        // Пересоздаём уведомление: сначала отменяем старое
+        if (updated.id != null) {
+          await _notifications.cancelEventReminder(updated.id!);
+        }
+        await _notifications.scheduleEventReminder(updated);
+        emit(EventUpdated(updated));
+      },
     );
   }
 
@@ -64,9 +79,13 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   ) async {
     emit(const EventLoading());
     final result = await _deleteEvent(DeleteEventParams(id: event.id));
-    result.fold(
-      (failure) => emit(EventError(failure.message)),
-      (_) => emit(const EventDeleted()),
+    await result.fold(
+      (failure) async => emit(EventError(failure.message)),
+      (_) async {
+        // Отменяем уведомление при удалении
+        await _notifications.cancelEventReminder(event.id);
+        emit(const EventDeleted());
+      },
     );
   }
 
