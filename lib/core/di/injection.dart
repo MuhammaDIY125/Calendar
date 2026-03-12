@@ -59,5 +59,13 @@ void _registerBlocs() {
 
   // Фабрика — новый экземпляр при каждом запросе
   sl.registerFactory(() => CalendarBloc(sl()));
-  sl.registerFactory(() => EventBloc());
+  sl.registerFactory(
+    () => EventBloc(
+      createEvent: sl(),
+      updateEvent: sl(),
+      deleteEvent: sl(),
+      getEventsForDate: sl(),
+      getEventById: sl(),
+    ),
+  );
 }
