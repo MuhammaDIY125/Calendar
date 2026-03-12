@@ -9,6 +9,7 @@ import 'package:calendar/features/calendar/presentation/bloc/calendar_event.dart
 import 'package:calendar/features/calendar/presentation/bloc/calendar_state.dart';
 import 'package:calendar/features/calendar/presentation/widgets/month_view.dart';
 import 'package:calendar/features/calendar/presentation/widgets/view_mode_selector.dart';
+import 'package:calendar/features/calendar/presentation/widgets/day_view.dart';
 import 'package:calendar/features/calendar/presentation/widgets/week_view.dart';
 import 'package:calendar/features/calendar/presentation/widgets/year_view.dart';
 import 'package:calendar/features/event/presentation/widgets/event_list.dart';
@@ -88,10 +89,9 @@ class _CalendarPageState extends State<CalendarPage> {
           height: 400,
           child: WeekView(),
         ),
-      // Day — будет реализован в шаге 16
       CalendarViewMode.day => const SizedBox(
-          height: 100,
-          child: Center(child: Text('Coming soon')),
+          height: 400,
+          child: DayView(),
         ),
     };
   }
