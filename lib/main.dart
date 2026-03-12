@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MainApp());
-}
+import 'package:calendar/app.dart';
+import 'package:calendar/core/di/injection.dart';
+import 'package:calendar/core/utils/notification_service.dart';
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(home: Scaffold());
-  }
+  // Регистрация зависимостей
+  await configureDependencies();
+
+  // Инициализация сервиса уведомлений
+  await NotificationService().initialize();
+
+  runApp(const App());
 }
