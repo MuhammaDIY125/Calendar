@@ -33,16 +33,16 @@ class _EventDetailPageState extends State<EventDetailPage> {
         if (state is EventDeleted) {
           final now = DateTime.now();
           context.read<CalendarBloc>().add(
-                InvalidateCacheForRange(
-                  start: DateTime(now.year, now.month - 1, 1),
-                  end: DateTime(now.year, now.month + 2, 0),
-                ),
-              );
+            InvalidateCacheForRange(
+              start: DateTime(now.year, now.month - 1, 1),
+              end: DateTime(now.year, now.month + 2, 0),
+            ),
+          );
           context.pop();
         } else if (state is EventError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       child: BlocBuilder<EventBloc, EventState>(
@@ -78,8 +78,7 @@ class _DetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = event.color.accentColor;
-    final timeLabel =
-        '${_fmt(event.startTime)} - ${_fmt(event.endTime)}';
+    final timeLabel = '${_fmt(event.startTime)} - ${_fmt(event.endTime)}';
 
     return Scaffold(
       body: Column(
@@ -90,8 +89,10 @@ class _DetailView extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (event.reminderMinutes != null) ...[
                     Text(
@@ -107,10 +108,9 @@ class _DetailView extends StatelessWidget {
                       _reminderLabel(event.reminderMinutes!),
                       style: TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.55),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.55),
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -130,14 +130,14 @@ class _DetailView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.5,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.55),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.55),
                       ),
                     ),
                   ],
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -155,13 +155,13 @@ class _DetailView extends StatelessWidget {
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   String _reminderLabel(int minutes) => switch (minutes) {
-        5 => '5 minutes before',
-        15 => '15 minutes before',
-        30 => '30 minutes before',
-        60 => '1 hour before',
-        1440 => '1 day before',
-        _ => '$minutes minutes before',
-      };
+    5 => '5 minutes before',
+    15 => '15 minutes before',
+    30 => '30 minutes before',
+    60 => '1 hour before',
+    1440 => '1 day before',
+    _ => '$minutes minutes before',
+  };
 }
 
 class _Header extends StatelessWidget {
@@ -190,6 +190,10 @@ class _Header extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [accent, accentDark],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
       child: SafeArea(
@@ -221,12 +225,14 @@ class _Header extends StatelessWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () =>
-                        context.push('/event/${event.id}/edit'),
+                    onTap: () => context.push('/event/${event.id}/edit'),
                     child: const Row(
                       children: [
-                        Icon(Icons.edit_outlined,
-                            color: Colors.white, size: 16),
+                        Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Edit',
@@ -267,8 +273,11 @@ class _Header extends StatelessWidget {
               // Время
               Row(
                 children: [
-                  Icon(Icons.access_time_rounded,
-                      color: Colors.white.withValues(alpha: 0.9), size: 16),
+                  Icon(
+                    Icons.access_time_filled_rounded,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    size: 16,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     timeLabel,
@@ -283,8 +292,11 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on_rounded,
-                        color: Colors.white.withValues(alpha: 0.9), size: 16),
+                    Icon(
+                      Icons.location_on_rounded,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       event.location,
@@ -345,8 +357,7 @@ class _DeleteButton extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-                foregroundColor: AppColors.deleteText),
+            style: TextButton.styleFrom(foregroundColor: AppColors.deleteText),
             child: const Text('Delete'),
           ),
         ],

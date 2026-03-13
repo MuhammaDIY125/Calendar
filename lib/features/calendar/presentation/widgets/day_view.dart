@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import 'package:go_router/go_router.dart';
+
 import 'package:calendar/core/constants/app_colors.dart';
 import 'package:calendar/core/utils/date_utils.dart';
 import 'package:calendar/features/calendar/presentation/bloc/calendar_bloc.dart';
@@ -68,19 +70,14 @@ class _DayViewState extends State<DayView> {
           );
         }
       },
-      child: BlocBuilder<CalendarBloc, CalendarState>(
-        builder: (context, state) {
-          return PageView.builder(
-            controller: _pageController,
-            itemCount: CalendarDateUtils.totalDays,
-            onPageChanged: _onPageChanged,
-            allowImplicitScrolling: true,
-            itemBuilder: (_, index) {
-              final date = CalendarDateUtils.dayIndexToDate(index);
-              final events = state.eventsForDate(date);
-              return _DayPage(date: date, events: events);
-            },
-          );
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: CalendarDateUtils.totalDays,
+        onPageChanged: _onPageChanged,
+        allowImplicitScrolling: true,
+        itemBuilder: (_, index) {
+          final date = CalendarDateUtils.dayIndexToDate(index);
+          return _DayPage(date: date);
         },
       ),
     );
@@ -89,9 +86,8 @@ class _DayViewState extends State<DayView> {
 
 class _DayPage extends StatefulWidget {
   final DateTime date;
-  final List<Event> events;
 
-  const _DayPage({required this.date, required this.events});
+  const _DayPage({required this.date});
 
   @override
   State<_DayPage> createState() => _DayPageState();
@@ -125,47 +121,81 @@ class _DayPageState extends State<_DayPage> {
     final isToday = CalendarDateUtils.isSameDay(widget.date, today);
     final dateLabel = DateFormat('EEEE, d MMMM').format(widget.date);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Заголовок дня
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Text(
-            dateLabel,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isToday
-                  ? AppColors.primary
-                  : theme.colorScheme.onSurface,
-            ),
-          ),
-        ),
-        const Divider(height: 1),
-        // Таймлайн
-        Expanded(
-          child: RepaintBoundary(
-            child: SingleChildScrollView(
-            controller: _scrollController,
-            child: SizedBox(
-              height: 24 * _hourHeight,
-              child: Stack(
+    return BlocBuilder<CalendarBloc, CalendarState>(
+      builder: (context, state) {
+        final events = state.eventsForDate(widget.date);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Заголовок дня + кнопка добавления
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Row(
                 children: [
-                  // Часовые линии и метки
-                  ...List.generate(24, (hour) => _HourLine(hour: hour)),
-                  // Блоки событий
-                  ...widget.events.map(
-                    (e) => _EventBlock(event: e),
+                  Text(
+                    dateLabel,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isToday
+                          ? AppColors.primary
+                          : theme.colorScheme.onSurface,
+                    ),
                   ),
-                  // Линия текущего времени
-                  if (isToday) _CurrentTimeLine(now: today),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => context.push(
+                      '/event/create',
+                      extra: widget.date,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        '+ Add Event',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-          ),
-        ),
-      ],
+            const Divider(height: 1),
+            // Таймлайн
+            Expanded(
+              child: RepaintBoundary(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: SizedBox(
+                    height: 24 * _hourHeight,
+                    child: Stack(
+                      children: [
+                        // Часовые линии и метки
+                        ...List.generate(24, (hour) => _HourLine(hour: hour)),
+                        // Блоки событий
+                        ...events.map(
+                          (e) => _EventBlock(event: e),
+                        ),
+                        // Линия текущего времени
+                        if (isToday) _CurrentTimeLine(now: today),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

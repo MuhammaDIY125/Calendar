@@ -57,15 +57,24 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildCalendarView(state),
-                const SizedBox(height: 4),
-                // Секция Schedule
-                Expanded(
-                  child: _ScheduleSection(
-                    events: state.eventsForDate(state.selectedDate),
-                    selectedDate: state.selectedDate,
+                // Year/Week/Day — занимают всё пространство (имеют свои списки)
+                if (state.viewMode == CalendarViewMode.year)
+                  const Expanded(child: YearView())
+                else if (state.viewMode == CalendarViewMode.week)
+                  const Expanded(child: WeekView())
+                else if (state.viewMode == CalendarViewMode.day)
+                  const Expanded(child: DayView())
+                else ...[
+                  // Month — календарь + секция Schedule снизу
+                  const SizedBox(height: 360, child: MonthView()),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: _ScheduleSection(
+                      events: state.eventsForDate(state.selectedDate),
+                      selectedDate: state.selectedDate,
+                    ),
                   ),
-                ),
+                ],
               ],
             );
           },
@@ -74,14 +83,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  Widget _buildCalendarView(CalendarState state) {
-    return switch (state.viewMode) {
-      CalendarViewMode.year => const SizedBox(height: 400, child: YearView()),
-      CalendarViewMode.month => const SizedBox(height: 320, child: MonthView()),
-      CalendarViewMode.week => const SizedBox(height: 400, child: WeekView()),
-      CalendarViewMode.day => const SizedBox(height: 400, child: DayView()),
-    };
-  }
 }
 
 /// Шапка страницы: день недели по центру крупным жирным,

@@ -31,7 +31,6 @@ class _EventEditPageState extends State<EventEditPage> {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('Edit Event'),
       ),
       body: BlocConsumer<EventBloc, EventState>(
         listener: (context, state) {

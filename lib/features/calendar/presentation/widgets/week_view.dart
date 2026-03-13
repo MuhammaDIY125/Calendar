@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:go_router/go_router.dart';
+
 import 'package:calendar/core/constants/app_colors.dart';
 import 'package:calendar/core/utils/date_utils.dart';
 import 'package:calendar/features/calendar/presentation/bloc/calendar_bloc.dart';
@@ -81,12 +83,58 @@ class _WeekViewState extends State<WeekView> {
             ),
           ),
           const Divider(height: 1),
-          // Список событий выбранного дня — собственный BlocBuilder
+          // Schedule заголовок + кнопка добавления
+          BlocBuilder<CalendarBloc, CalendarState>(
+            buildWhen: (prev, curr) => prev.selectedDate != curr.selectedDate,
+            builder: (context, state) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  children: [
+                    Text(
+                      'Schedule',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => context.push(
+                        '/event/create',
+                        extra: state.selectedDate,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          '+ Add Event',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Список событий выбранного дня
           Expanded(
             child: BlocBuilder<CalendarBloc, CalendarState>(
               builder: (context, state) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: EventList(
                     events: state.eventsForDate(state.selectedDate),
                   ),
