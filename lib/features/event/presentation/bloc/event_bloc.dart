@@ -47,8 +47,9 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     await result.fold(
       (failure) async => emit(EventError(failure.message)),
       (created) async {
-        // Планируем уведомление если задано напоминание
-        await _notifications.scheduleEventReminder(created);
+        try {
+          await _notifications.scheduleEventReminder(created);
+        } catch (_) {}
         emit(EventCreated(created));
       },
     );
@@ -63,11 +64,12 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     await result.fold(
       (failure) async => emit(EventError(failure.message)),
       (updated) async {
-        // Пересоздаём уведомление: сначала отменяем старое
-        if (updated.id != null) {
-          await _notifications.cancelEventReminder(updated.id!);
-        }
-        await _notifications.scheduleEventReminder(updated);
+        try {
+          if (updated.id != null) {
+            await _notifications.cancelEventReminder(updated.id!);
+          }
+          await _notifications.scheduleEventReminder(updated);
+        } catch (_) {}
         emit(EventUpdated(updated));
       },
     );
@@ -82,8 +84,9 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     await result.fold(
       (failure) async => emit(EventError(failure.message)),
       (_) async {
-        // Отменяем уведомление при удалении
-        await _notifications.cancelEventReminder(event.id);
+        try {
+          await _notifications.cancelEventReminder(event.id);
+        } catch (_) {}
         emit(const EventDeleted());
       },
     );
