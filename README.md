@@ -16,6 +16,24 @@ Flutter-приложение-календарь с четырьмя режима
 
 ---
 
+## Скриншоты
+
+<table>
+  <tr>
+    <td><img src="assets/screenshots/Screenshot_1.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_2.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_3.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_4.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_5.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_6.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_7.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_8.png" width="160"/></td>
+    <td><img src="assets/screenshots/Screenshot_9.png" width="160"/></td>
+  </tr>
+</table>
+
+---
+
 ## Архитектура
 
 Проект построен по принципам **Clean Architecture** со строгим разделением слоёв:
