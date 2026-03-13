@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +15,100 @@ import 'package:calendar/features/event/domain/entities/event.dart';
 
 /// Высота одного часа в таймлайне (dp)
 const _hourHeight = 60.0;
+
+/// Ширина области временных меток слева
+const _labelsWidth = 52.0;
+
+/// Отступ от правого края
+const _rightPad = 8.0;
+
+/// Зазор между параллельными событиями в соседних колонках
+const _colGap = 4.0;
+
+// ---------------------------------------------------------------------------
+// Раскладка событий по колонкам
+// ---------------------------------------------------------------------------
+
+/// Позиция события в таймлайне: в какой колонке и сколько всего колонок в группе.
+class _EventLayout {
+  final Event event;
+  final int column;
+  final int totalColumns;
+
+  const _EventLayout({
+    required this.event,
+    required this.column,
+    required this.totalColumns,
+  });
+}
+
+int _startMin(Event e) => e.startTime.hour * 60 + e.startTime.minute;
+
+int _endMin(Event e) {
+  final raw = e.endTime.hour * 60 + e.endTime.minute;
+  return _startMin(e) + (raw - _startMin(e)).clamp(15, 24 * 60);
+}
+
+/// Жадный алгоритм: распределяем события по колонкам так, чтобы
+/// пересекающиеся по времени события стояли рядом, а не друг на друге.
+List<_EventLayout> _computeEventLayouts(List<Event> events) {
+  if (events.isEmpty) return [];
+
+  final sorted = [...events]
+    ..sort((a, b) => _startMin(a).compareTo(_startMin(b)));
+
+  // columnEnds[i] — минута окончания последнего события в колонке i
+  final columnEnds = <int>[];
+  final assignments = <int>[];
+
+  for (final event in sorted) {
+    final start = _startMin(event);
+    final end = _endMin(event);
+
+    // Ищем первую свободную колонку
+    int col = -1;
+    for (int i = 0; i < columnEnds.length; i++) {
+      if (columnEnds[i] <= start) {
+        col = i;
+        break;
+      }
+    }
+    if (col == -1) {
+      col = columnEnds.length;
+      columnEnds.add(end);
+    } else {
+      columnEnds[col] = end;
+    }
+    assignments.add(col);
+  }
+
+  // Для каждого события определяем число колонок в его «группе»
+  // (максимальная колонка среди всех перекрывающих событий + 1)
+  return List.generate(sorted.length, (i) {
+    final startA = _startMin(sorted[i]);
+    final endA = _endMin(sorted[i]);
+
+    int maxCol = assignments[i];
+    for (int j = 0; j < sorted.length; j++) {
+      if (i == j) continue;
+      final startB = _startMin(sorted[j]);
+      final endB = _endMin(sorted[j]);
+      if (startB < endA && endB > startA) {
+        maxCol = max(maxCol, assignments[j]);
+      }
+    }
+
+    return _EventLayout(
+      event: sorted[i],
+      column: assignments[i],
+      totalColumns: maxCol + 1,
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
+// DayView — PageView.builder по дням
+// ---------------------------------------------------------------------------
 
 /// Вид «День» — PageView.builder по дням с вертикальным таймлайном.
 class DayView extends StatefulWidget {
@@ -84,6 +180,10 @@ class _DayViewState extends State<DayView> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// _DayPage
+// ---------------------------------------------------------------------------
+
 class _DayPage extends StatefulWidget {
   final DateTime date;
 
@@ -124,6 +224,8 @@ class _DayPageState extends State<_DayPage> {
     return BlocBuilder<CalendarBloc, CalendarState>(
       builder: (context, state) {
         final events = state.eventsForDate(widget.date);
+        final layouts = _computeEventLayouts(events);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -177,17 +279,33 @@ class _DayPageState extends State<_DayPage> {
                   controller: _scrollController,
                   child: SizedBox(
                     height: 24 * _hourHeight,
-                    child: Stack(
-                      children: [
-                        // Часовые линии и метки
-                        ...List.generate(24, (hour) => _HourLine(hour: hour)),
-                        // Блоки событий
-                        ...events.map(
-                          (e) => _EventBlock(event: e),
-                        ),
-                        // Линия текущего времени
-                        if (isToday) _CurrentTimeLine(now: today),
-                      ],
+                    // LayoutBuilder нужен, чтобы узнать реальную ширину
+                    // и правильно разбить параллельные события по колонкам
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final availableWidth =
+                            constraints.maxWidth - _labelsWidth - _rightPad;
+                        return Stack(
+                          children: [
+                            // Часовые линии и метки
+                            ...List.generate(
+                              24,
+                              (hour) => _HourLine(hour: hour),
+                            ),
+                            // Блоки событий с колоночной раскладкой
+                            ...layouts.map(
+                              (layout) => _EventBlock(
+                                event: layout.event,
+                                column: layout.column,
+                                totalColumns: layout.totalColumns,
+                                availableWidth: availableWidth,
+                              ),
+                            ),
+                            // Линия текущего времени
+                            if (isToday) _CurrentTimeLine(now: today),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -199,6 +317,10 @@ class _DayPageState extends State<_DayPage> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Вспомогательные виджеты
+// ---------------------------------------------------------------------------
 
 /// Горизонтальная линия с меткой часа
 class _HourLine extends StatelessWidget {
@@ -218,7 +340,7 @@ class _HourLine extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 48,
+            width: _labelsWidth,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(
@@ -243,33 +365,47 @@ class _HourLine extends StatelessWidget {
   }
 }
 
-/// Блок события, позиционированный по времени начала и длительности
+/// Блок события, позиционированный по времени начала и длительности.
+/// При наличии параллельных событий занимает долю ширины (свою колонку).
 class _EventBlock extends StatelessWidget {
   final Event event;
+  final int column;
+  final int totalColumns;
+  final double availableWidth;
 
-  const _EventBlock({required this.event});
+  const _EventBlock({
+    required this.event,
+    required this.column,
+    required this.totalColumns,
+    required this.availableWidth,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final startMinutes =
-        event.startTime.hour * 60 + event.startTime.minute;
-    final endMinutes = event.endTime.hour * 60 + event.endTime.minute;
+    final startMinutes = _startMin(event);
     final durationMinutes =
-        (endMinutes - startMinutes).clamp(15, 24 * 60).toDouble();
+        (_endMin(event) - startMinutes).clamp(15, 24 * 60).toDouble();
 
     final top = startMinutes / 60 * _hourHeight;
-    final height = durationMinutes / 60 * _hourHeight;
+    final rawHeight = durationMinutes / 60 * _hourHeight;
+    // Обрезаем высоту, чтобы блок не выходил за пределы таймлайна
+    final height = rawHeight.clamp(0.0, 24 * _hourHeight - top);
+
+    // Ширина колонки; последняя колонка не имеет правого зазора
+    final colWidth = availableWidth / totalColumns;
+    final left = _labelsWidth + column * colWidth;
+    final width = colWidth - (column < totalColumns - 1 ? _colGap : 0);
 
     final accent = event.color.accentColor;
     final bg = event.color.backgroundColor;
 
     return Positioned(
       top: top,
-      left: 52,
-      right: 8,
+      left: left,
+      width: width,
       height: height,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 1),
+        margin: const EdgeInsets.only(bottom: 1),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(8),
@@ -299,6 +435,8 @@ class _EventBlock extends StatelessWidget {
                   fontSize: 10,
                   color: accent.withValues(alpha: 0.8),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
           ],
         ),

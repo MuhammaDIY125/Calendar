@@ -41,13 +41,17 @@ class CalendarDateUtils {
   }
 
   static int dateToDayIndex(DateTime date) {
-    final epoch = DateTime(AppConstants.minYear, 1, 1);
-    return DateTime(date.year, date.month, date.day).difference(epoch).inDays;
+    // Используем UTC, чтобы исключить погрешности перехода на летнее время
+    final epoch = DateTime.utc(AppConstants.minYear, 1, 1);
+    final dateUtc = DateTime.utc(date.year, date.month, date.day);
+    return dateUtc.difference(epoch).inDays;
   }
 
   static DateTime dayIndexToDate(int index) {
-    final epoch = DateTime(AppConstants.minYear, 1, 1);
-    return epoch.add(Duration(days: index));
+    // Используем UTC, чтобы add(Duration(days:)) не давал 23:00 из-за DST
+    final epoch = DateTime.utc(AppConstants.minYear, 1, 1);
+    final utc = epoch.add(Duration(days: index));
+    return DateTime(utc.year, utc.month, utc.day);
   }
 
   static int get totalWeeks {
