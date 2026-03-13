@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:calendar/core/constants/app_colors.dart';
 import 'package:calendar/features/event/domain/entities/event_color.dart';
 import 'package:calendar/features/event/presentation/widgets/color_picker.dart';
 import 'package:calendar/features/event/presentation/widgets/reminder_picker.dart';
@@ -113,43 +114,58 @@ class _EventFormState extends State<EventForm> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Название
+                  _FieldLabel('Event name'),
+                  const SizedBox(height: 4),
                   TextFormField(
                     controller: _nameCtrl,
-                    decoration:
-                        const InputDecoration(hintText: 'Event name'),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+                    decoration: const InputDecoration(),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Name is required'
+                        : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
                   // Описание
+                  _FieldLabel('Event description'),
+                  const SizedBox(height: 4),
                   TextFormField(
                     controller: _descCtrl,
                     maxLines: 5,
-                    decoration:
-                        const InputDecoration(hintText: 'Event description'),
+                    decoration: const InputDecoration(),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
                   // Место
+                  _FieldLabel('Event location'),
+                  const SizedBox(height: 4),
                   TextFormField(
                     controller: _locationCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Event location',
-                      suffixIcon: Icon(Icons.location_on_outlined),
+                    decoration: InputDecoration(
+                      suffixIcon: Icon(
+                        Icons.location_on,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
                   // Цвет
+                  _FieldLabel('Priority color'),
+                  const SizedBox(height: 4),
                   EventColorPicker(
                     value: _color,
                     onChanged: (c) => setState(() => _color = c),
                   ),
-                  const SizedBox(height: 12),
-                  // Время начала и конца
+                  const SizedBox(height: 16),
+
+                  // Время
+                  _FieldLabel('Event time'),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Expanded(
@@ -159,7 +175,7 @@ class _EventFormState extends State<EventForm> {
                           onChanged: (t) => setState(() => _startTime = t),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: TimePickerField(
                           label: 'End',
@@ -169,8 +185,11 @@ class _EventFormState extends State<EventForm> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
                   // Напоминание
+                  _FieldLabel('Reminder'),
+                  const SizedBox(height: 4),
                   ReminderPicker(
                     value: _reminderMinutes,
                     onChanged: (v) => setState(() => _reminderMinutes = v),
@@ -186,11 +205,39 @@ class _EventFormState extends State<EventForm> {
               onPressed: _submit,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
-              child: Text(widget.submitLabel),
+              child: Text(
+                widget.submitLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Метка поля формы — текст над полем ввода, как в Figma.
+class _FieldLabel extends StatelessWidget {
+  final String text;
+
+  const _FieldLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
       ),
     );
   }

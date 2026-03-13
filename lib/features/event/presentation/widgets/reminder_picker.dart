@@ -58,7 +58,7 @@ class _ReminderPickerState extends State<ReminderPicker> {
       children: [
         DropdownButtonFormField<int?>(
           initialValue: _selected,
-          decoration: const InputDecoration(hintText: 'Reminder'),
+          decoration: const InputDecoration(),
           icon: Icon(
             Icons.keyboard_arrow_down_rounded,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
