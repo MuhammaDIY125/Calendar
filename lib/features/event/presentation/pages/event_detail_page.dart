@@ -31,7 +31,6 @@ class _EventDetailPageState extends State<EventDetailPage> {
     return BlocListener<EventBloc, EventState>(
       listener: (context, state) {
         if (state is EventDeleted) {
-          // Инвалидируем кэш CalendarBloc после удаления
           final now = DateTime.now();
           context.read<CalendarBloc>().add(
                 InvalidateCacheForRange(
@@ -80,7 +79,7 @@ class _DetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = event.color.accentColor;
     final timeLabel =
-        '${_fmt(event.startTime)} – ${_fmt(event.endTime)}';
+        '${_fmt(event.startTime)} - ${_fmt(event.endTime)}';
 
     return Scaffold(
       body: Column(
@@ -90,23 +89,52 @@ class _DetailView extends StatelessWidget {
           // Нижняя секция с деталями
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (event.reminderMinutes != null) ...[
-                    _DetailRow(
-                      label: 'Reminder',
-                      value: _reminderLabel(event.reminderMinutes!),
-                      icon: Icons.notifications_none_rounded,
+                    Text(
+                      'Reminder',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
+                    Text(
+                      _reminderLabel(event.reminderMinutes!),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
                   ],
                   if (event.description.isNotEmpty) ...[
-                    _DetailRow(
-                      label: 'Description',
-                      value: event.description,
-                      icon: Icons.notes_rounded,
+                    Text(
+                      'Description',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      event.description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.55),
+                      ),
                     ),
                   ],
                 ],
@@ -149,21 +177,19 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Более тёмный оттенок для градиента
+    final hsl = HSLColor.fromColor(accent);
+    final accentDark = hsl
+        .withLightness((hsl.lightness - 0.12).clamp(0.0, 1.0))
+        .toColor();
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accent,
-            Color.fromARGB(
-              255,
-              (accent.r * 0.75).round(),
-              (accent.g * 0.75).round(),
-              (accent.b * 0.75).round(),
-            ),
-          ],
+          colors: [accent, accentDark],
         ),
       ),
       child: SafeArea(
@@ -173,41 +199,55 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Кнопки навигации
+              // Навигация: кнопка назад + Edit
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _CircleButton(
-                    icon: Icons.arrow_back_rounded,
+                  // Кнопка назад — белый круг с chevron
+                  GestureDetector(
                     onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left_rounded,
+                        size: 24,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ),
                   GestureDetector(
                     onTap: () =>
                         context.push('/event/${event.id}/edit'),
                     child: const Row(
                       children: [
+                        Icon(Icons.edit_outlined,
+                            color: Colors.white, size: 16),
+                        SizedBox(width: 4),
                         Text(
                           'Edit',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w500,
+                            fontSize: 15,
                           ),
                         ),
-                        SizedBox(width: 4),
-                        Icon(Icons.edit_outlined,
-                            color: Colors.white, size: 18),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               // Название
               Text(
                 event.name,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 26,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -217,7 +257,7 @@ class _Header extends StatelessWidget {
                   event.description,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -228,7 +268,7 @@ class _Header extends StatelessWidget {
               Row(
                 children: [
                   Icon(Icons.access_time_rounded,
-                      color: Colors.white.withValues(alpha: 0.85), size: 16),
+                      color: Colors.white.withValues(alpha: 0.9), size: 16),
                   const SizedBox(width: 6),
                   Text(
                     timeLabel,
@@ -244,7 +284,7 @@ class _Header extends StatelessWidget {
                 Row(
                   children: [
                     Icon(Icons.location_on_rounded,
-                        color: Colors.white.withValues(alpha: 0.85), size: 16),
+                        color: Colors.white.withValues(alpha: 0.9), size: 16),
                     const SizedBox(width: 6),
                     Text(
                       event.location,
@@ -264,76 +304,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _CircleButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 18, color: Colors.black87),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon,
-            size: 20,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _DeleteButton extends StatelessWidget {
   final Event event;
 
@@ -348,15 +318,15 @@ class _DeleteButton extends StatelessWidget {
         style: TextButton.styleFrom(
           backgroundColor: AppColors.deleteBackground,
           foregroundColor: AppColors.deleteText,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         icon: const Icon(Icons.delete_outline_rounded, size: 20),
         label: const Text(
           'Delete Event',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
     );
