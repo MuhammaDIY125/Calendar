@@ -25,6 +25,9 @@ const _rightPad = 8.0;
 /// Зазор между параллельными событиями в соседних колонках
 const _colGap = 4.0;
 
+/// Минимальная высота блока события — гарантирует видимость названия
+const _minEventHeight = 28.0;
+
 // ---------------------------------------------------------------------------
 // Раскладка событий по колонкам
 // ---------------------------------------------------------------------------
@@ -245,10 +248,8 @@ class _DayPageState extends State<_DayPage> {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () => context.push(
-                      '/event/create',
-                      extra: widget.date,
-                    ),
+                    onTap: () =>
+                        context.push('/event/create', extra: widget.date),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -383,13 +384,14 @@ class _EventBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startMinutes = _startMin(event);
-    final durationMinutes =
-        (_endMin(event) - startMinutes).clamp(15, 24 * 60).toDouble();
+    final durationMinutes = (_endMin(event) - startMinutes)
+        .clamp(15, 24 * 60)
+        .toDouble();
 
     final top = startMinutes / 60 * _hourHeight;
     final rawHeight = durationMinutes / 60 * _hourHeight;
-    // Обрезаем высоту, чтобы блок не выходил за пределы таймлайна
-    final height = rawHeight.clamp(0.0, 24 * _hourHeight - top);
+    // Минимум _minEventHeight, максимум — до конца таймлайна
+    final height = rawHeight.clamp(_minEventHeight, 24 * _hourHeight - top);
 
     // Ширина колонки; последняя колонка не имеет правого зазора
     final colWidth = availableWidth / totalColumns;
@@ -406,39 +408,46 @@ class _EventBlock extends StatelessWidget {
       height: height,
       child: Container(
         margin: const EdgeInsets.only(bottom: 1),
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(8),
-          border: Border(
-            left: BorderSide(color: accent, width: 3),
-          ),
+          border: Border(left: BorderSide(color: accent, width: 3)),
         ),
         padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              event.name,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: accent,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (height > 30)
+        // OverflowBox даёт Column неограниченную высоту — она берёт ровно столько,
+        // сколько нужно тексту, без RenderFlex overflow. Визуально обрезает
+        // clipBehavior: Clip.hardEdge на Container.
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minHeight: 0,
+          maxHeight: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                '${_fmt(event.startTime)} – ${_fmt(event.endTime)}',
+                event.name,
                 style: TextStyle(
-                  fontSize: 10,
-                  color: accent.withValues(alpha: 0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-          ],
+              if (height > 42)
+                Text(
+                  '${_fmt(event.startTime)} – ${_fmt(event.endTime)}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: accent.withValues(alpha: 0.8),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -472,12 +481,7 @@ class _CurrentTimeLine extends StatelessWidget {
               shape: BoxShape.circle,
             ),
           ),
-          Expanded(
-            child: Container(
-              height: 1.5,
-              color: Colors.red,
-            ),
-          ),
+          Expanded(child: Container(height: 1.5, color: Colors.red)),
         ],
       ),
     );
