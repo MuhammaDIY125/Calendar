@@ -62,55 +62,60 @@ class _WeekViewState extends State<WeekView> {
           );
         }
       },
-      child: BlocBuilder<CalendarBloc, CalendarState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              // Полоса 7 дней
-              SizedBox(
-                height: 80,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: CalendarDateUtils.totalWeeks,
-                  onPageChanged: _onPageChanged,
-                  allowImplicitScrolling: true,
-                  itemBuilder: (_, index) {
-                    final monday = CalendarDateUtils.weekIndexToMonday(index);
-                    return _WeekStrip(
-                      monday: monday,
-                      selectedDate: state.selectedDate,
-                    );
-                  },
-                ),
-              ),
-              const Divider(height: 1),
-              // Список событий выбранного дня
-              Expanded(
-                child: SingleChildScrollView(
+      // PageView не оборачивается в BlocBuilder — каждая полоса
+      // получает стейт через собственный BlocBuilder внутри.
+      child: Column(
+        children: [
+          // Полоса 7 дней
+          SizedBox(
+            height: 80,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: CalendarDateUtils.totalWeeks,
+              onPageChanged: _onPageChanged,
+              allowImplicitScrolling: true,
+              itemBuilder: (_, index) {
+                final monday = CalendarDateUtils.weekIndexToMonday(index);
+                return _WeekStripPage(monday: monday);
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          // Список событий выбранного дня — собственный BlocBuilder
+          Expanded(
+            child: BlocBuilder<CalendarBloc, CalendarState>(
+              builder: (context, state) {
+                return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: EventList(
                     events: state.eventsForDate(state.selectedDate),
                   ),
-                ),
-              ),
-            ],
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _WeekStrip extends StatelessWidget {
+/// Одна страница полосы дней недели — имеет собственный BlocBuilder.
+class _WeekStripPage extends StatelessWidget {
   final DateTime monday;
-  final DateTime selectedDate;
 
   static const _dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  const _WeekStrip({required this.monday, required this.selectedDate});
+  const _WeekStripPage({required this.monday});
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<CalendarBloc, CalendarState>(
+      builder: (context, state) => _buildStrip(context, state.selectedDate),
+    );
+  }
+
+  Widget _buildStrip(BuildContext context, DateTime selectedDate) {
     final today = DateTime.now();
 
     return Row(

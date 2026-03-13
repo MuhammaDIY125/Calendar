@@ -43,8 +43,10 @@ class CalendarGrid extends StatelessWidget {
                   child: Center(
                     child: Text(
                       label,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
                       ),
                     ),
                   ),

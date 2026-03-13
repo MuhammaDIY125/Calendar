@@ -23,9 +23,9 @@ class EventDots extends StatelessWidget {
       children: visible
           .map(
             (e) => Container(
-              width: 4,
-              height: 4,
-              margin: const EdgeInsets.symmetric(horizontal: 1),
+              width: 5,
+              height: 5,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
               decoration: BoxDecoration(
                 color: e.color.accentColor,
                 shape: BoxShape.circle,

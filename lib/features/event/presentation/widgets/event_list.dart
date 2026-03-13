@@ -18,21 +18,21 @@ class EventList extends StatelessWidget {
           child: Text(
             'No events for this day',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.4),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
           ),
         ),
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: events.length,
       itemBuilder: (_, i) => EventCard(event: events[i]),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
     );
   }
 }

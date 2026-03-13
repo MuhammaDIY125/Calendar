@@ -10,6 +10,10 @@ import 'package:calendar/features/calendar/presentation/widgets/calendar_grid.da
 import 'package:calendar/features/calendar/presentation/widgets/month_header.dart';
 
 /// Вид «Месяц» — PageView.builder по всем месяцам диапазона 1950–2950.
+///
+/// PageView сам по себе не оборачивается в BlocBuilder, чтобы избежать
+/// пересоздания всего дерева при каждом изменении стейта (RenderBox ошибки).
+/// Каждая страница самостоятельно подписывается на BlocBuilder.
 class MonthView extends StatefulWidget {
   const MonthView({super.key});
 
@@ -51,8 +55,9 @@ class _MonthViewState extends State<MonthView> {
 
   @override
   Widget build(BuildContext context) {
+    // BlocListener только для синхронизации позиции PageView при навигации
+    // через кнопки стрелок — не пересоздаёт PageView при изменении событий.
     return BlocListener<CalendarBloc, CalendarState>(
-      // Синхронизация PageView при навигации через кнопки стрелок
       listenWhen: (prev, curr) =>
           prev.focusedDate != curr.focusedDate &&
           curr.viewMode == CalendarViewMode.month,
@@ -70,66 +75,61 @@ class _MonthViewState extends State<MonthView> {
           );
         }
       },
-      child: BlocBuilder<CalendarBloc, CalendarState>(
-        builder: (context, state) {
-          return PageView.builder(
-            controller: _pageController,
-            itemCount: AppConstants.totalMonths,
-            onPageChanged: _onPageChanged,
-            // Предзагрузка соседних месяцев
-            allowImplicitScrolling: true,
-            itemBuilder: (_, index) {
-              final (year, month) = CalendarDateUtils.indexToMonth(index);
-              return _MonthPage(
-                year: year,
-                month: month,
-                state: state,
-              );
-            },
-          );
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: AppConstants.totalMonths,
+        onPageChanged: _onPageChanged,
+        allowImplicitScrolling: true,
+        itemBuilder: (_, index) {
+          final (year, month) = CalendarDateUtils.indexToMonth(index);
+          return _MonthPage(year: year, month: month);
         },
       ),
     );
   }
 }
 
+/// Одна страница месяца — имеет собственный BlocBuilder,
+/// чтобы не пересоздавать весь PageView при изменении стейта.
 class _MonthPage extends StatelessWidget {
   final int year;
   final int month;
-  final CalendarState state;
 
   const _MonthPage({
     required this.year,
     required this.month,
-    required this.state,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          MonthHeader(
-            year: year,
-            month: month,
-            onPrevious: () =>
-                context.read<CalendarBloc>().add(const NavigateToPrevious()),
-            onNext: () =>
-                context.read<CalendarBloc>().add(const NavigateToNext()),
+    return BlocBuilder<CalendarBloc, CalendarState>(
+      builder: (context, state) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MonthHeader(
+                year: year,
+                month: month,
+                onPrevious: () =>
+                    context.read<CalendarBloc>().add(const NavigateToPrevious()),
+                onNext: () =>
+                    context.read<CalendarBloc>().add(const NavigateToNext()),
+              ),
+              const SizedBox(height: 8),
+              CalendarGrid(
+                year: year,
+                month: month,
+                selectedDate: state.selectedDate,
+                cachedEvents: state.cachedEvents,
+                onDateSelected: (date) =>
+                    context.read<CalendarBloc>().add(SelectDate(date)),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          CalendarGrid(
-            year: year,
-            month: month,
-            selectedDate: state.selectedDate,
-            cachedEvents: state.cachedEvents,
-            onDateSelected: (date) =>
-                context.read<CalendarBloc>().add(SelectDate(date)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

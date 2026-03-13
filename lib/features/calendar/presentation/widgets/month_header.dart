@@ -25,13 +25,14 @@ class MonthHeader extends StatelessWidget {
       children: [
         Text(
           monthName,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
           ),
         ),
         const Spacer(),
         _NavButton(icon: Icons.chevron_left, onTap: onPrevious),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         _NavButton(icon: Icons.chevron_right, onTap: onNext),
       ],
     );
@@ -48,10 +49,20 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Icon(
-        icon,
-        size: 20,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
     );
   }

@@ -51,77 +51,76 @@ class _YearViewState extends State<YearView> {
           );
         }
       },
-      child: BlocBuilder<CalendarBloc, CalendarState>(
-        builder: (context, state) {
-          return PageView.builder(
-            controller: _pageController,
-            itemCount: AppConstants.totalYears,
-            allowImplicitScrolling: true,
-            onPageChanged: (index) {
-              final year = AppConstants.minYear + index;
-              context.read<CalendarBloc>().add(
-                    LoadEventsForRange(
-                      start: DateTime(year, 1, 1),
-                      end: DateTime(year, 12, 31),
-                    ),
-                  );
-            },
-            itemBuilder: (_, index) {
-              final year = AppConstants.minYear + index;
-              return _YearPage(year: year, state: state);
-            },
+      // PageView не оборачивается в BlocBuilder — каждая страница
+      // получает стейт через собственный BlocBuilder внутри.
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: AppConstants.totalYears,
+        allowImplicitScrolling: true,
+        onPageChanged: (index) {
+          final year = AppConstants.minYear + index;
+          context.read<CalendarBloc>().add(
+            LoadEventsForRange(
+              start: DateTime(year, 1, 1),
+              end: DateTime(year, 12, 31),
+            ),
           );
+        },
+        itemBuilder: (_, index) {
+          final year = AppConstants.minYear + index;
+          return _YearPage(year: year);
         },
       ),
     );
   }
 }
 
+/// Страница одного года — имеет собственный BlocBuilder.
 class _YearPage extends StatelessWidget {
   final int year;
-  final CalendarState state;
 
-  const _YearPage({required this.year, required this.state});
+  const _YearPage({required this.year});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return BlocBuilder<CalendarBloc, CalendarState>(
+      builder: (context, state) {
+        final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        // Заголовок года
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            '$year',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Column(
+            children: [
+              // Заголовок года
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  '$year',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              // Сетка 4×3
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                ),
+                itemCount: 12,
+                itemBuilder: (_, monthIndex) {
+                  final month = monthIndex + 1;
+                  return _MiniMonth(year: year, month: month, state: state);
+                },
+              ),
+            ],
           ),
-        ),
-        // Сетка 4×3
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.85,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemCount: 12,
-            itemBuilder: (_, monthIndex) {
-              final month = monthIndex + 1;
-              return _MiniMonth(
-                year: year,
-                month: month,
-                state: state,
-              );
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -138,8 +137,18 @@ class _MiniMonth extends StatelessWidget {
   });
 
   static const _monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
@@ -182,7 +191,9 @@ class _MiniMonth extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             // Мини-сетка дней
-            Expanded(child: _MiniGrid(year: year, month: month, state: state)),
+            Expanded(
+              child: _MiniGrid(year: year, month: month, state: state),
+            ),
           ],
         ),
       ),
@@ -233,10 +244,14 @@ class _MiniGrid extends StatelessWidget {
             final isToday = CalendarDateUtils.isSameDay(date, today);
 
             // Проверяем есть ли события в кэше
-            final hasEvents = (state.cachedEvents[
-                        DateTime(date.year, date.month, date.day)] ??
-                    [])
-                .isNotEmpty;
+            final hasEvents =
+                (state.cachedEvents[DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                        )] ??
+                        [])
+                    .isNotEmpty;
 
             return SizedBox(
               width: cellSize,
@@ -259,8 +274,7 @@ class _MiniGrid extends StatelessWidget {
                       color: isToday
                           ? Colors.white
                           : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontWeight:
-                          isToday ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
                     ),
                     textAlign: TextAlign.center,
                   ),
