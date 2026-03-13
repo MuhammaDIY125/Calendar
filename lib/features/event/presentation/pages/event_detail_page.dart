@@ -39,6 +39,9 @@ class _EventDetailPageState extends State<EventDetailPage> {
             ),
           );
           context.pop();
+        } else if (state is EventUpdated) {
+          // Перезагружаем событие после редактирования
+          context.read<EventBloc>().add(LoadEventById(widget.eventId));
         } else if (state is EventError) {
           ScaffoldMessenger.of(
             context,

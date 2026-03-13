@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -44,6 +46,7 @@ class _CalendarPageState extends State<CalendarPage> {
       body: SafeArea(
         child: BlocBuilder<CalendarBloc, CalendarState>(
           builder: (context, state) {
+            dev.log('[CalendarPage] build — viewMode=${state.viewMode} isLoading=${state.isLoading} focused=${state.focusedDate}', name: 'CalendarPage');
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

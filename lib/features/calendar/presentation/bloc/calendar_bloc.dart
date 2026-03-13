@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:calendar/features/calendar/domain/repositories/calendar_repository.dart';
@@ -9,10 +11,12 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   final CalendarRepository _repository;
 
   CalendarBloc(this._repository)
-      : super(CalendarState(
+    : super(
+        CalendarState(
           selectedDate: DateTime.now(),
           focusedDate: DateTime.now(),
-        )) {
+        ),
+      ) {
     on<ChangeViewMode>(_onChangeViewMode);
     on<SelectDate>(_onSelectDate);
     on<NavigateToNext>(_onNavigateToNext);
@@ -27,10 +31,8 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   }
 
   void _onSelectDate(SelectDate event, Emitter<CalendarState> emit) {
-    emit(state.copyWith(
-      selectedDate: event.date,
-      focusedDate: event.date,
-    ));
+    dev.log('[CalendarBloc] SelectDate — ${event.date}', name: 'CalendarBloc');
+    emit(state.copyWith(selectedDate: event.date, focusedDate: event.date));
   }
 
   Future<void> _onNavigateToNext(
@@ -55,6 +57,10 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     LoadEventsForRange event,
     Emitter<CalendarState> emit,
   ) async {
+    dev.log(
+      '[CalendarBloc] LoadEventsForRange — ${event.start} → ${event.end}',
+      name: 'CalendarBloc',
+    );
     emit(state.copyWith(isLoading: true));
 
     final result = await _repository.getEventsGroupedByDate(
@@ -63,8 +69,18 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     );
 
     result.fold(
-      (_) => emit(state.copyWith(isLoading: false)),
+      (failure) {
+        dev.log(
+          '[CalendarBloc] LoadEventsForRange FAILED — $failure',
+          name: 'CalendarBloc',
+        );
+        emit(state.copyWith(isLoading: false));
+      },
       (grouped) {
+        dev.log(
+          '[CalendarBloc] LoadEventsForRange OK — ${grouped.length} days',
+          name: 'CalendarBloc',
+        );
         // Мёрджим с кэшем, не затирая уже загруженные данные
         final merged = Map<DateTime, List<Event>>.from(state.cachedEvents)
           ..addAll(grouped);
@@ -87,15 +103,15 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     final focused = state.focusedDate;
     return switch (state.viewMode) {
       CalendarViewMode.year => DateTime(
-          focused.year + direction,
-          focused.month,
-          focused.day,
-        ),
+        focused.year + direction,
+        focused.month,
+        focused.day,
+      ),
       CalendarViewMode.month => DateTime(
-          focused.year,
-          focused.month + direction,
-          1,
-        ),
+        focused.year,
+        focused.month + direction,
+        1,
+      ),
       CalendarViewMode.week => focused.add(Duration(days: direction * 7)),
       CalendarViewMode.day => focused.add(Duration(days: direction)),
     };

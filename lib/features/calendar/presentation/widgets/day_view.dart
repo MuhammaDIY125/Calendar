@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -128,9 +129,9 @@ class _DayViewState extends State<DayView> {
   void initState() {
     super.initState();
     final focused = context.read<CalendarBloc>().state.focusedDate;
-    _pageController = PageController(
-      initialPage: CalendarDateUtils.dateToDayIndex(focused),
-    );
+    final initialPage = CalendarDateUtils.dateToDayIndex(focused);
+    dev.log('[DayView] initState — focusedDate=$focused initialPage=$initialPage', name: 'DayView');
+    _pageController = PageController(initialPage: initialPage);
   }
 
   @override
@@ -141,6 +142,7 @@ class _DayViewState extends State<DayView> {
 
   void _onPageChanged(int index) {
     final date = CalendarDateUtils.dayIndexToDate(index);
+    dev.log('[DayView] onPageChanged — index=$index date=$date', name: 'DayView');
     final bloc = context.read<CalendarBloc>();
     bloc
       ..add(SelectDate(date))
@@ -154,14 +156,18 @@ class _DayViewState extends State<DayView> {
 
   @override
   Widget build(BuildContext context) {
+    dev.log('[DayView] build() called — controller.initialPage set to ${_pageController.initialPage}', name: 'DayView');
     return BlocListener<CalendarBloc, CalendarState>(
-      listenWhen: (prev, curr) =>
-          prev.focusedDate != curr.focusedDate &&
-          curr.viewMode == CalendarViewMode.day,
+      listenWhen: (prev, curr) {
+        final changed = prev.focusedDate != curr.focusedDate && curr.viewMode == CalendarViewMode.day;
+        dev.log('[DayView] listenWhen — prevFocused=${prev.focusedDate} currFocused=${curr.focusedDate} fires=$changed', name: 'DayView');
+        return changed;
+      },
       listener: (_, state) {
         final target = CalendarDateUtils.dateToDayIndex(state.focusedDate);
-        if (_pageController.hasClients &&
-            _pageController.page?.round() != target) {
+        final current = _pageController.page?.round();
+        dev.log('[DayView] listener — target=$target currentPage=$current', name: 'DayView');
+        if (_pageController.hasClients && current != target) {
           _pageController.animateToPage(
             target,
             duration: const Duration(milliseconds: 300),
@@ -226,6 +232,7 @@ class _DayPageState extends State<_DayPage> {
 
     return BlocBuilder<CalendarBloc, CalendarState>(
       builder: (context, state) {
+        dev.log('[DayPage] build — date=${widget.date} isLoading=${state.isLoading} viewMode=${state.viewMode} events=${state.eventsForDate(widget.date).length}', name: 'DayView');
         final events = state.eventsForDate(widget.date);
         final layouts = _computeEventLayouts(events);
 
@@ -276,39 +283,11 @@ class _DayPageState extends State<_DayPage> {
             // Таймлайн
             Expanded(
               child: RepaintBoundary(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: SizedBox(
-                    height: 24 * _hourHeight,
-                    // LayoutBuilder нужен, чтобы узнать реальную ширину
-                    // и правильно разбить параллельные события по колонкам
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final availableWidth =
-                            constraints.maxWidth - _labelsWidth - _rightPad;
-                        return Stack(
-                          children: [
-                            // Часовые линии и метки
-                            ...List.generate(
-                              24,
-                              (hour) => _HourLine(hour: hour),
-                            ),
-                            // Блоки событий с колоночной раскладкой
-                            ...layouts.map(
-                              (layout) => _EventBlock(
-                                event: layout.event,
-                                column: layout.column,
-                                totalColumns: layout.totalColumns,
-                                availableWidth: availableWidth,
-                              ),
-                            ),
-                            // Линия текущего времени
-                            if (isToday) _CurrentTimeLine(now: today),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
+                child: _Timeline(
+                  scrollController: _scrollController,
+                  layouts: layouts,
+                  isToday: isToday,
+                  today: today,
                 ),
               ),
             ),
@@ -322,6 +301,50 @@ class _DayPageState extends State<_DayPage> {
 // ---------------------------------------------------------------------------
 // Вспомогательные виджеты
 // ---------------------------------------------------------------------------
+
+/// Таймлайн суток. Ширину вычисляет через MediaQuery — без LayoutBuilder,
+/// который внутри SingleChildScrollView может вызывать бесконечные layout-проходы.
+class _Timeline extends StatelessWidget {
+  final ScrollController scrollController;
+  final List<_EventLayout> layouts;
+  final bool isToday;
+  final DateTime today;
+
+  const _Timeline({
+    required this.scrollController,
+    required this.layouts,
+    required this.isToday,
+    required this.today,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final availableWidth = screenWidth - _labelsWidth - _rightPad;
+    dev.log('[_Timeline] build — screenWidth=$screenWidth events=${layouts.length}', name: 'DayView');
+
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: SizedBox(
+        height: 24 * _hourHeight,
+        child: Stack(
+          children: [
+            ...List.generate(24, (hour) => _HourLine(hour: hour)),
+            ...layouts.map(
+              (layout) => _EventBlock(
+                event: layout.event,
+                column: layout.column,
+                totalColumns: layout.totalColumns,
+                availableWidth: availableWidth,
+              ),
+            ),
+            if (isToday) _CurrentTimeLine(now: today),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Горизонтальная линия с меткой часа
 class _HourLine extends StatelessWidget {
@@ -390,8 +413,10 @@ class _EventBlock extends StatelessWidget {
 
     final top = startMinutes / 60 * _hourHeight;
     final rawHeight = durationMinutes / 60 * _hourHeight;
-    // Минимум _minEventHeight, максимум — до конца таймлайна
-    final height = rawHeight.clamp(_minEventHeight, 24 * _hourHeight - top);
+    // Верхняя граница — остаток таймлайна до полуночи (не менее _minEventHeight,
+    // иначе clamp выбросит RangeError когда событие начинается очень поздно).
+    final available = (24 * _hourHeight - top).clamp(_minEventHeight, 24 * _hourHeight);
+    final height = max(rawHeight, _minEventHeight).clamp(0.0, available);
 
     // Ширина колонки; последняя колонка не имеет правого зазора
     final colWidth = availableWidth / totalColumns;
